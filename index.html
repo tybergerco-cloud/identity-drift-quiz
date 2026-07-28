@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Identity Drift Diagnostic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0a0a0a;
+    --ink:#111111;
+    --bone:#ede9e1;
+    --bone-dim:#a6a29a;
+    --line:#2b2b2b;
+    --line-soft:#1c1c1c;
+    --accent:#ede9e1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--black);
+    color:var(--bone);
+    font-family:'Inter',sans-serif;
+    font-weight:400;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:64px 24px 96px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces',serif;
+    font-weight:400;
+    line-height:1.15;
+    margin:0;
+  }
+  .eyebrow{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--bone-dim);
+    margin-bottom:18px;
+  }
+  .hairline{
+    width:100%;
+    height:1px;
+    background:var(--line);
+    margin:32px 0;
+  }
+  /* ---------- Intro screen ---------- */
+  #screen-intro{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .wound-line{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:22px;
+    color:var(--bone-dim);
+    line-height:1.5;
+    margin-bottom:28px;
+  }
+  h1.headline{ font-size:38px; letter-spacing:-0.01em; margin-bottom:20px; }
+  .lede{
+    font-size:16px;
+    line-height:1.7;
+    color:var(--bone-dim);
+    max-width:52ch;
+    margin-bottom:36px;
+  }
+  .lever-preview{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:40px;
+  }
+  .lever-preview div{
+    background:var(--black);
+    padding:16px 12px;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--bone-dim);
+    text-align:center;
+  }
+  /* ---------- Buttons ---------- */
+  .btn{
+    appearance:none;
+    border:1px solid var(--bone);
+    background:transparent;
+    color:var(--bone);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:16px 28px;
+    cursor:pointer;
+    transition:background 0.25s ease, color 0.25s ease;
+    text-align:center;
+  }
+  .btn:hover{ background:var(--bone); color:var(--black); }
+  .btn:focus-visible{ outline:2px solid var(--bone); outline-offset:3px; }
+  .btn-primary{ align-self:flex-start; }
+  .meta-note{
+    font-size:12px;
+    color:var(--bone-dim);
+    margin-top:16px;
+  }
+  /* ---------- Quiz screen ---------- */
+  #screen-quiz{ display:none; flex:1; flex-direction:column; }
+  .progress-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .progress-count{ font-size:12px; color:var(--bone-dim); letter-spacing:0.05em; }
+  .progress-lever{ font-size:12px; color:var(--bone-dim); letter-spacing:0.12em; text-transform:uppercase; }
+  .progress-track{ width:100%; height:1px; background:var(--line); margin-bottom:56px; position:relative; }
+  .progress-fill{ position:absolute; top:0; left:0; height:1px; background:var(--bone); transition:width 0.4s ease; }
+  .q-num{ font-family:'Fraunces',serif; font-size:14px; color:var(--bone-dim); margin-bottom:18px; }
+  .q-text{ font-family:'Fraunces',serif; font-size:26px; font-weight:400; line-height:1.4; margin-bottom:44px; min-height:110px; }
+  .scale{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:20px; }
+  .scale-opt{
+    background:var(--black);
+    border:none;
+    color:var(--bone);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    text-align:left;
+    padding:18px 20px;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:background 0.2s ease;
+  }
+  .scale-opt:hover{ background:var(--line-soft); }
+  .scale-opt .dot{
+    width:9px; height:9px; border-radius:50%;
+    border:1px solid var(--bone-dim);
+    flex-shrink:0;
+    margin-right:16px;
+  }
+  .scale-opt-label{ display:flex; align-items:center; }
+  .scale-labels{ display:flex; justify-content:space-between; font-size:11px; color:var(--bone-dim); letter-spacing:0.04em; padding:0 2px; }
+  .back-link{
+    background:none; border:none; color:var(--bone-dim); font-family:'Inter',sans-serif;
+    font-size:12px; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; margin-top:auto; padding-top:40px; text-align:left; align-self:flex-start;
+  }
+  .back-link:hover{ color:var(--bone); }
+  /* ---------- Email gate screen ---------- */
+  #screen-email{ display:none; flex:1; flex-direction:column; justify-content:center; }
+  .email-eyebrow{ font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:var(--bone-dim); margin-bottom:18px; }
+  .email-headline{ font-size:32px; margin-bottom:16px; }
+  .email-sub{ font-size:15px; line-height:1.7; color:var(--bone-dim); max-width:50ch; margin-bottom:36px; }
+  .email-form{ display:flex; flex-direction:column; gap:14px; max-width:420px; }
+  .email-form input{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--bone);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    padding:16px 18px;
+    width:100%;
+  }
+  .email-form input::placeholder{ color:var(--bone-dim); }
+  .email-form input:focus{ outline:none; border-color:var(--bone); }
+  .email-form input:focus-visible{ outline:2px solid var(--bone); outline-offset:2px; }
+  .email-error{ font-size:13px; color:#c99; min-height:18px; margin-top:-4px; }
+  .email-privacy{ font-size:12px; color:var(--bone-dim); margin-top:18px; max-width:44ch; }
+  /* ---------- Results screen ---------- */
+  #screen-results{ display:none; flex:1; flex-direction:column; }
+  .results-eyebrow{ font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:var(--bone-dim); margin-bottom:14px; }
+  .results-headline{ font-size:32px; margin-bottom:16px; }
+  .results-sub{ font-size:15px; line-height:1.7; color:var(--bone-dim); max-width:54ch; margin-bottom:8px; }
+  .diagram-wrap{ display:flex; justify-content:center; margin:44px 0; }
+  .lever-list{ display:flex; flex-direction:column; }
+  .lever-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:16px 0; border-bottom:1px solid var(--line-soft);
+    font-size:14px;
+  }
+  .lever-row:first-child{ border-top:1px solid var(--line-soft); }
+  .lever-name{ letter-spacing:0.04em; }
+  .lever-name.weak::after{ content:' — primary lever'; color:var(--bone-dim); font-style:italic; font-family:'Fraunces',serif; }
+  .lever-score{ font-family:'Fraunces',serif; font-size:16px; color:var(--bone); }
+  .primary-callout{
+    border:1px solid var(--line);
+    padding:32px;
+    margin:40px 0;
+  }
+  .primary-callout .eyebrow{ margin-bottom:14px; }
+  .primary-callout p{ font-size:15px; line-height:1.75; color:var(--bone-dim); margin:0 0 14px; }
+  .primary-callout p:last-child{ margin-bottom:0; }
+  .cta-block{ margin-top:24px; }
+  .cta-block .btn{ display:block; width:100%; margin-bottom:12px; }
+  .cta-secondary{ font-size:13px; color:var(--bone-dim); text-align:center; margin-top:8px; }
+  .cta-secondary a{ color:var(--bone); }
+  .restart-link{
+    background:none; border:none; color:var(--bone-dim); font-family:'Inter',sans-serif;
+    font-size:12px; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; margin-top:48px; text-align:center; width:100%;
+  }
+  .restart-link:hover{ color:var(--bone); }
+  @media(max-width:520px){
+    .wrap{ padding:44px 20px 72px; }
+    h1.headline{ font-size:30px; }
+    .q-text{ font-size:21px; min-height:auto; }
+    .lever-preview{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <div id="screen-intro">
+    <div class="eyebrow">The Six-Lever Diagnostic</div>
+    <p class="wound-line">"Looks like you have it together. Feels like you're behind."</p>
+    <h1 class="headline">The Identity Drift Diagnostic</h1>
+    <p class="lede">Eighteen questions. About four minutes. You'll find out exactly which of the six levers — Beliefs, Standards, Habits, Environment, Accountability, Decision-Making — is quietly running your life, and where the drift actually started.</p>
+    <div class="lever-preview">
+      <div>Beliefs</div><div>Standards</div><div>Habits</div>
+      <div>Environment</div><div>Accountability</div><div>Decision-Making</div>
+    </div>
+    <button class="btn btn-primary" onclick="startQuiz()">Begin the Diagnostic</button>
+    <p class="meta-note">No email required to see your results.</p>
+  </div>
+
+  <!-- ============ QUIZ ============ -->
+  <div id="screen-quiz">
+    <div class="progress-row">
+      <span class="progress-count" id="progress-count">Question 1 of 18</span>
+      <span class="progress-lever" id="progress-lever">Beliefs</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+    <div class="q-num" id="q-num">01</div>
+    <div class="q-text" id="q-text"></div>
+
+    <div class="scale-labels">
+      <span>Disagree</span><span>Agree</span>
+    </div>
+    <div class="scale" id="scale">
+      <button class="scale-opt" data-val="1" onclick="answer(1)"><span class="scale-opt-label"><span class="dot"></span>Strongly disagree</span></button>
+      <button class="scale-opt" data-val="2" onclick="answer(2)"><span class="scale-opt-label"><span class="dot"></span>Disagree</span></button>
+      <button class="scale-opt" data-val="3" onclick="answer(3)"><span class="scale-opt-label"><span class="dot"></span>Neutral</span></button>
+      <button class="scale-opt" data-val="4" onclick="answer(4)"><span class="scale-opt-label"><span class="dot"></span>Agree</span></button>
+      <button class="scale-opt" data-val="5" onclick="answer(5)"><span class="scale-opt-label"><span class="dot"></span>Strongly agree</span></button>
+    </div>
+    <button class="back-link" id="back-link" onclick="goBack()" style="visibility:hidden;">← Previous question</button>
+  </div>
+
+  <!-- ============ EMAIL GATE ============ -->
+  <div id="screen-email">
+    <div class="email-eyebrow">Your Diagnostic Is Ready</div>
+    <h2 class="email-headline">Where should we send your results?</h2>
+    <p class="email-sub">You'll get your full breakdown across all six levers instantly on this page — plus a copy sent to your inbox, along with the free 7-Day Identity Reset.</p>
+    <div class="email-form">
+      <input type="text" id="input-name" placeholder="First name" autocomplete="given-name">
+      <input type="email" id="input-email" placeholder="Email address" autocomplete="email">
+      <div class="email-error" id="email-error"></div>
+      <button class="btn btn-primary" id="email-submit-btn" onclick="submitEmail()">Show My Results</button>
+    </div>
+    <p class="email-privacy">No spam. Just your results and the free reset. Unsubscribe anytime.</p>
+  </div>
+
+  <!-- ============ RESULTS ============ -->
+  <div id="screen-results">
+    <div class="results-eyebrow">Your Results</div>
+    <h2 class="results-headline" id="results-headline"></h2>
+    <p class="results-sub" id="results-sub"></p>
+
+    <div class="diagram-wrap" id="diagram-wrap"></div>
+
+    <div class="lever-list" id="lever-list"></div>
+
+    <div class="primary-callout">
+      <div class="eyebrow">Where the drift actually is</div>
+      <p id="callout-text"></p>
+      <p>This isn't a discipline problem. It's the six levers running out of alignment with who you're actually trying to become — and it's fixable at the identity level, not with another routine. That's the whole idea behind <strong>Identity Engineering™</strong>: instead of chasing another goal, you systematically rebuild the six levers until the version of you who doesn't need to think about this becomes your default.</p>
+    </div>
+
+    <div class="cta-block">
+      <button class="btn" onclick="alert('Wire this button to your DM/comment flow — e.g. link to the Instagram post or Skool free course URL.')">Start the Free 7-Day Identity Reset</button>
+      <p class="cta-secondary">Or comment <strong>"RESET"</strong> on the post that sent you here and I'll DM you the link.</p>
+    </div>
+
+    <button class="restart-link" onclick="restart()">Retake the diagnostic</button>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- Question bank ---------------- */
+const questions = [
+  { lever:'Beliefs', text:"I often catch myself thinking, \u2018I know what to do, I just can\u2019t seem to follow through.\u2019" },
+  { lever:'Beliefs', text:"Deep down, I believe I should be further along than I am by now." },
+  { lever:'Beliefs', text:"I\u2019ve quietly wondered if I\u2019m just not disciplined enough \u2014 even though I\u2019ve achieved real things." },
+
+  { lever:'Standards', text:"I let myself off the hook when I miss something I said I\u2019d do more often than I\u2019d admit." },
+  { lever:'Standards', text:"There\u2019s a real gap between how put-together I look and how disciplined I actually am behind closed doors." },
+  { lever:'Standards', text:"I\u2019ve lowered what I expect from myself over time without ever really deciding to." },
+
+  { lever:'Habits', text:"I\u2019ve restarted the same routine or habit more than three times in the last two years." },
+  { lever:'Habits', text:"I\u2019m consistent at work, but inconsistent almost everywhere else \u2014 health, faith, relationships." },
+  { lever:'Habits', text:"I know exactly what a good week looks like for me. I rarely actually have one." },
+
+  { lever:'Environment', text:"The people and spaces around me don\u2019t really reflect who I\u2019m trying to become." },
+  { lever:'Environment', text:"I\u2019ve never really designed my surroundings on purpose \u2014 job, home, circle mostly just happened to me." },
+  { lever:'Environment', text:"It\u2019s harder to follow through in my current environment than it should be." },
+
+  { lever:'Accountability', text:"No one would actually notice if I quietly gave up on a goal this month." },
+  { lever:'Accountability', text:"I\u2019ve never had someone consistently checking whether I did what I said I would do." },
+  { lever:'Accountability', text:"I keep most of my real goals to myself." },
+
+  { lever:'Decision-Making', text:"I make big decisions based on how I feel in the moment more often than I\u2019d like to admit." },
+  { lever:'Decision-Making', text:"I\u2019ve talked myself out of things I knew were right for me." },
+  { lever:'Decision-Making', text:"Looking back, a lot of my choices were about avoiding discomfort rather than moving toward something." },
+];
+
+const levers = ['Beliefs','Standards','Habits','Environment','Accountability','Decision-Making'];
+
+const leverCopy = {
+  'Beliefs': "Your Beliefs lever is where drift usually starts \u2014 the quiet story you carry about what you\u2019re capable of and what you \u2018deserve\u2019 at this point in your life. When this lever drifts, every other lever gets harder to hold, because you\u2019re trying to build new habits on top of an old identity.",
+  'Standards': "Your Standards lever governs what you actually accept from yourself day to day \u2014 not what you say you want, but the bar you quietly enforce when no one\u2019s watching. When this drifts, the gap between your outward success and your private follow-through widens without you noticing.",
+  'Habits': "Your Habits lever is the daily evidence of your identity. When this drifts, you\u2019re not lacking willpower \u2014 you\u2019re running habits that were built by an old version of you, and they no longer match who you\u2019re trying to become.",
+  'Environment': "Your Environment lever is everything around you \u2014 people, spaces, inputs \u2014 that either reinforces the person you\u2019re becoming or quietly pulls you back to who you were. When this drifts, you\u2019re fighting your own surroundings every day just to stay consistent.",
+  'Accountability': "Your Accountability lever is what keeps a private decision from quietly dissolving. When this drifts, your goals live only in your own head \u2014 which means they\u2019re also only one bad week away from disappearing.",
+  'Decision-Making': "Your Decision-Making lever is the pattern behind your choices \u2014 whether you\u2019re deciding from the identity you want, or from whatever feels most comfortable in the moment. When this drifts, you keep choosing short-term relief over long-term alignment, then wondering why nothing changes."
+};
+
+/* ---------------- Kit (ConvertKit) config ---------------- */
+/* Find your Form ID: Kit dashboard \u2192 Grow \u2192 Landing Pages & Forms \u2192 click your form \u2192 the ID is in the URL.
+   The Form ID is safe to leave here \u2014 it's just an identifier, not a credential.
+   The actual API key lives server-side in the Netlify Function (see netlify/functions/subscribe.js),
+   set as an environment variable in your Netlify site settings. It should NEVER appear in this file. */
+const KIT_FORM_ID = 'YOUR_KIT_FORM_ID';
+
+let current = 0;
+let responses = new Array(questions.length).fill(null);
+
+function startQuiz(){
+  document.getElementById('screen-intro').style.display = 'none';
+  document.getElementById('screen-quiz').style.display = 'flex';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = questions[current];
+  document.getElementById('progress-count').textContent = `Question ${current+1} of ${questions.length}`;
+  document.getElementById('progress-lever').textContent = q.lever;
+  document.getElementById('progress-fill').style.width = `${(current/questions.length)*100}%`;
+  document.getElementById('q-num').textContent = String(current+1).padStart(2,'0');
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('back-link').style.visibility = current === 0 ? 'hidden' : 'visible';
+
+  document.querySelectorAll('.scale-opt').forEach(btn=>{
+    const val = parseInt(btn.dataset.val,10);
+    btn.querySelector('.dot').style.background = (responses[current] === val) ? 'var(--bone)' : 'transparent';
+  });
+}
+
+function answer(val){
+  responses[current] = val;
+  if (current < questions.length - 1){
+    current++;
+    renderQuestion();
+  } else {
+    showEmailGate();
+  }
+}
+
+function showEmailGate(){
+  document.getElementById('screen-quiz').style.display = 'none';
+  document.getElementById('screen-email').style.display = 'flex';
+}
+
+function goBack(){
+  if (current > 0){
+    current--;
+    renderQuestion();
+  }
+}
+
+function restart(){
+  current = 0;
+  responses = new Array(questions.length).fill(null);
+  document.getElementById('screen-results').style.display = 'none';
+  document.getElementById('screen-email').style.display = 'none';
+  document.getElementById('input-name').value = '';
+  document.getElementById('input-email').value = '';
+  document.getElementById('email-error').textContent = '';
+  document.getElementById('screen-intro').style.display = 'flex';
+}
+
+/* ---------------- Email submission ---------------- */
+function isValidEmail(email){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function submitEmail(){
+  const nameEl = document.getElementById('input-name');
+  const emailEl = document.getElementById('input-email');
+  const errEl = document.getElementById('email-error');
+  const btn = document.getElementById('email-submit-btn');
+  const name = nameEl.value.trim();
+  const email = emailEl.value.trim();
+
+  errEl.textContent = '';
+  if (!isValidEmail(email)){
+    errEl.textContent = 'Enter a valid email address to see your results.';
+    emailEl.focus();
+    return;
+  }
+
+  btn.textContent = 'Sending\u2026';
+  btn.disabled = true;
+
+  if (KIT_FORM_ID !== 'YOUR_KIT_FORM_ID'){
+    try{
+      const res = await fetch('/.netlify/functions/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          first_name: name || undefined,
+          form_id: KIT_FORM_ID
+        })
+      });
+      if (!res.ok){
+        console.error('Kit subscribe failed with status', res.status);
+      }
+    } catch(err){
+      /* Fail silently to the user \u2014 never block someone from seeing results they earned
+         because of a network hiccup. Check your Kit dashboard if signups aren't showing up. */
+      console.error('Subscribe request failed:', err);
+    }
+  } else {
+    console.warn('KIT_FORM_ID not set \u2014 email was not sent to Kit. See config at top of script.');
+  }
+
+  document.getElementById('screen-email').style.display = 'none';
+  showResults();
+}
+
+/* ---------------- Scoring ---------------- */
+function computeScores(){
+  const scores = {};
+  levers.forEach(l=>{
+    const vals = [];
+    questions.forEach((q,i)=>{ if(q.lever===l) vals.push(responses[i]); });
+    const avgDrift = vals.reduce((a,b)=>a+b,0) / vals.length; // 1-5, higher = more drift
+    const driftPct = ((avgDrift - 1) / 4) * 100; // 0-100
+    const alignmentPct = Math.round(100 - driftPct);
+    scores[l] = alignmentPct;
+  });
+  return scores;
+}
+
+/* ---------------- Radar diagram ---------------- */
+function buildRadar(scores){
+  const size = 320, center = size/2, maxR = 120;
+  const angleStep = (Math.PI*2) / levers.length;
+  const startAngle = -Math.PI/2;
+
+  function pointFor(index, value){
+    const angle = startAngle + angleStep*index;
+    const r = (value/100) * maxR;
+    return [ center + r*Math.cos(angle), center + r*Math.sin(angle) ];
+  }
+  function ringPoints(pct){
+    return levers.map((l,i)=>pointFor(i, pct).join(',')).join(' ');
+  }
+
+  let svg = `<svg width="${size}" height="${size+40}" viewBox="0 0 ${size} ${size+40}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // grid rings
+  [20,40,60,80,100].forEach(pct=>{
+    svg += `<polygon points="${ringPoints(pct)}" fill="none" stroke="#2b2b2b" stroke-width="1" />`;
+  });
+  // axis lines
+  levers.forEach((l,i)=>{
+    const [x,y] = pointFor(i,100);
+    svg += `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="#2b2b2b" stroke-width="1" />`;
+  });
+  // data polygon
+  const dataPts = levers.map((l,i)=>pointFor(i, scores[l]).join(',')).join(' ');
+  svg += `<polygon points="${dataPts}" fill="#ede9e1" fill-opacity="0.12" stroke="#ede9e1" stroke-width="1.5" />`;
+  // data dots
+  levers.forEach((l,i)=>{
+    const [x,y] = pointFor(i, scores[l]);
+    svg += `<circle cx="${x}" cy="${y}" r="3" fill="#ede9e1" />`;
+  });
+  // labels
+  levers.forEach((l,i)=>{
+    const [x,y] = pointFor(i, 100+22);
+    let anchor = 'middle';
+    if (Math.cos(startAngle + angleStep*i) > 0.3) anchor = 'start';
+    if (Math.cos(startAngle + angleStep*i) < -0.3) anchor = 'end';
+    svg += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#a6a29a" font-family="Inter, sans-serif" font-size="11" letter-spacing="0.5">${l}</text>`;
+  });
+
+  svg += `</svg>`;
+  return svg;
+}
+
+/* ---------------- Results rendering ---------------- */
+function showResults(){
+  document.getElementById('screen-quiz').style.display = 'none';
+  document.getElementById('screen-results').style.display = 'flex';
+
+  const scores = computeScores();
+  const avg = Math.round(levers.reduce((a,l)=>a+scores[l],0) / levers.length);
+
+  let headline, sub;
+  if (avg >= 75){
+    headline = "Mostly aligned \u2014 with one lever pulling you off course.";
+    sub = "Your identity is closer to intact than most people who take this. But one lever is still quietly working against you, and it's worth naming precisely.";
+  } else if (avg >= 50){
+    headline = "Moderate Identity Drift.";
+    sub = "You're not starting from zero \u2014 but there's a real, specific gap between who you're presenting and who you're actually operating as day to day.";
+  } else {
+    headline = "Significant Identity Drift.";
+    sub = "This is more common than it feels right now, especially for people who look like they have it together. The good news: drift this clear is also very fixable.";
+  }
+  document.getElementById('results-headline').textContent = headline;
+  document.getElementById('results-sub').textContent = sub;
+
+  document.getElementById('diagram-wrap').innerHTML = buildRadar(scores);
+
+  const sorted = [...levers].sort((a,b)=>scores[a]-scores[b]);
+  const weakest = sorted[0];
+  const secondWeakest = (scores[sorted[1]] - scores[sorted[0]] <= 8) ? sorted[1] : null;
+
+  const listEl = document.getElementById('lever-list');
+  listEl.innerHTML = '';
+  levers.slice().sort((a,b)=>scores[a]-scores[b]).forEach(l=>{
+    const row = document.createElement('div');
+    row.className = 'lever-row';
+    const isWeak = (l === weakest || l === secondWeakest);
+    row.innerHTML = `<span class="lever-name${isWeak?' weak':''}">${l}</span><span class="lever-score">${scores[l]}%</span>`;
+    listEl.appendChild(row);
+  });
+
+  let calloutText = leverCopy[weakest];
+  if (secondWeakest){
+    calloutText += ` ${leverCopy[secondWeakest]}`;
+  }
+  document.getElementById('callout-text').textContent = calloutText;
+}
+</script>
+</body>
+</html>
